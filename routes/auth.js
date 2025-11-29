@@ -11,6 +11,7 @@ const {
   verifyEmail,
   verifyEmailOTP,
   resendEmailVerification,
+  updateProfile,
   updateemailotp,
   updateemail,
   TwoFactorOTP,
@@ -33,9 +34,10 @@ router.get("/referrals", async (req, res) => {
       });
     }
 
-    // Case-insensitive search
+    // Count only active users with this referral code (case-insensitive)
     const count = await User.countDocuments({
       referralUsed: { $regex: `^${code}$`, $options: "i" },
+      isActive: true
     });
 
     res.json({
@@ -58,6 +60,7 @@ router.post('/login', login);
 router.post('/social-login', socialLogin);
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
+router.put('/update-profile', auth, updateProfile);
 router.post('/update-password-direct', updatePasswordDirect); // For testing purposes
 router.get('/verify-email/:token', verifyEmail);
 router.get('/verify-email-otp/:otp/:email', verifyEmailOTP);

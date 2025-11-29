@@ -40,6 +40,26 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other', 'Prefer not to say', null],
+    default: null
+  },
+  phoneNumber: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  country: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  city: {
+    type: String,
+    default: null,
+    trim: true
+  },
   socialProviders: {
     google: {
       id: String,

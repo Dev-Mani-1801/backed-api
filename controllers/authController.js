@@ -29,10 +29,22 @@ exports.register = async (req, res, next) => {
 
     var used_referral = 'null';
 
-    if (!referral_code || referral_code === '') {
-      console.log("No Referral Code received");
-    } else {
-      used_referral = referral_code;
+    // Validate referral code if provided
+    if (referral_code && referral_code.trim() !== '') {
+      const trimmedCode = referral_code.trim();
+      const referringUser = await User.findOne({
+        referralCode: { $regex: `^${trimmedCode}$`, $options: 'i' }
+      });
+
+      if (!referringUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid referral code. Please check the code and try again.'
+        });
+      }
+
+      used_referral = trimmedCode;
+      console.log(`Valid referral code ${used_referral} used`);
     }
 
     // Check if user already exists
@@ -193,6 +205,11 @@ exports.getMe = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        gender: user.gender,
+        phoneNumber: user.phoneNumber,
+        country: user.country,
+        city: user.city,
+        photo: user.photo,
         isActive: user.isActive,
         referralCode: user.referralCode,
         lastLogin: user.lastLogin,
@@ -204,6 +221,70 @@ exports.getMe = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/update-profile
+// @access  Private
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { name, gender, phoneNumber, country, city } = req.body;
+
+    // Find user by ID from auth middleware
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update only the fields that are provided
+    if (name !== undefined) user.name = name;
+    if (gender !== undefined) user.gender = gender;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (country !== undefined) user.country = country;
+    if (city !== undefined) user.city = city;
+
+    // Save the updated user
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        gender: user.gender,
+        phoneNumber: user.phoneNumber,
+        country: user.country,
+        city: user.city,
+        photo: user.photo,
+        isActive: user.isActive,
+        referralCode: user.referralCode,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating profile'
     });
   }
 };
